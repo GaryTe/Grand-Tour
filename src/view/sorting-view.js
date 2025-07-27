@@ -31,13 +31,13 @@ function createSortingTemplate() {
 }
 
 export default class SortingView {
-  getTemplate() {
+  #getTemplate() {
     return createSortingTemplate();
   }
 
   getElement() {
     if (!this.element) {
-      this.element = createElement(this.getTemplate());
+      this.element = createElement(this.#getTemplate());
     }
 
     return this.element;

@@ -5,13 +5,13 @@ function createListRoutesTemplate() {
 }
 
 export default class ListRoutesView {
-  getTemplate() {
+  #getTemplate() {
     return createListRoutesTemplate();
   }
 
   getElement() {
     if (!this.element) {
-      this.element = createElement(this.getTemplate());
+      this.element = createElement(this.#getTemplate());
     }
 
     return this.element;

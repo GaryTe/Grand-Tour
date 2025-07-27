@@ -5,13 +5,13 @@ function createButtonNewEventTemplate() {
 }
 
 export default class ButtonNewEventView {
-  getTemplate() {
+  #getTemplate() {
     return createButtonNewEventTemplate();
   }
 
   getElement() {
     if (!this.element) {
-      this.element = createElement(this.getTemplate());
+      this.element = createElement(this.#getTemplate());
     }
 
     return this.element;
@@ -19,5 +19,9 @@ export default class ButtonNewEventView {
 
   removeElement() {
     this.element = null;
+  }
+
+  buttonOpenFormHandler(buttonOpenFormHandler) {
+    this.element.addEventListener('click', () => buttonOpenFormHandler());
   }
 }
