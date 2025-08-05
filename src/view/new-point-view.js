@@ -1,4 +1,4 @@
-import { createElement } from '../render';
+import AbstractView from '../framework/view/abstract-view';
 
 function createNewPointTemplate(edit) {
 
@@ -154,34 +154,29 @@ function createNewPointTemplate(edit) {
   `;
 }
 
-export default class NewPointView {
+export default class NewPointView extends AbstractView {
   #edit = false;
+  #buttonCloseEditFormHandler = null;
 
-  constructor(edit = false) {
+  constructor(edit = false, buttonCloseEditFormHandler) {
+    super();
     this.#edit = edit;
+    this.#buttonCloseEditFormHandler = buttonCloseEditFormHandler;
+
+    if(edit) {
+      this.#onButtonCloseEditForm();
+    }
   }
 
-  #getTemplate() {
+  get template() {
     return createNewPointTemplate(this.#edit);
   }
 
-  getElement() {
-    if (!this.element) {
-      this.element = createElement(this.#getTemplate());
-    }
-
-    return this.element;
-  }
-
-  removeElement() {
-    this.element = null;
-  }
-
-  buttonCloseEditFormHandler(buttonCloseEditFormHandler) {
+  #onButtonCloseEditForm() {
     const buttonCloseEditForm = this.element.querySelector('.event__rollup-btn');
     buttonCloseEditForm.addEventListener('click', () => {
-      buttonCloseEditFormHandler();
-      buttonCloseEditForm.removeEventListener('click', buttonCloseEditFormHandler);
+      this.#buttonCloseEditFormHandler();
+      buttonCloseEditForm.removeEventListener('click', this.#buttonCloseEditFormHandler);
     });
   }
 }

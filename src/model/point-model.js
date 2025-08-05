@@ -3,7 +3,7 @@ import { offers } from '../mock/offer';
 
 export default class PointModel {
 
-  getPoint() {
+  getEverythingPoint() {
     const pointsList = this.#collectionDataPoint();
 
     return pointsList;
@@ -11,22 +11,29 @@ export default class PointModel {
 
   #collectionDataPoint() {
     const pointsList = [];
+    const copyPointsList = points.slice();
 
-    points.forEach((point) => {
-      const idOffers = point.offers;
-      let newPoint = null;
+    copyPointsList.forEach((point) => {
+      const idOffers = point._offers;
+      let newPoint = {};
 
-      if(idOffers) {
-        point.offers = [];
+      if(idOffers && idOffers.length - 1 > 0) {
+        newPoint.offers = [];
 
         for(const id of idOffers) {
-          const offersList = offers.filter((offer) => id === offer.id);
-
-          newPoint = {
-            ...point,
-            ...point.offers.push(...offersList)
-          };
+          offers.forEach((offer) => {
+            if(id === offer.id) {
+              newPoint.offers.push(offer);
+            }
+          });
         }
+
+        newPoint = {
+          ...point,
+          ...newPoint
+        };
+        delete newPoint._offers;
+
         pointsList.push(newPoint);
       }else{
         pointsList.push(point);

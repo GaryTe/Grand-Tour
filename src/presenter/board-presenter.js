@@ -2,48 +2,48 @@ import FilterView from '../view/filter-view.js';
 import ButtonNewEventView from '../view/button-new-event-view.js';
 import SortingView from '../view/sorting-view.js';
 import ListRoutesView from '../view/list-routes-view.js';
-import PointRouteView from '../view/point-route-view.js';
+import PointPresenter from './point-presenter.js';
 import PointModel from '../model/point-model.js';
 import EmptyListView from '../view/empty-list-view.js';
-import NewPointView from '../view/new-point-view.js';
 
-import {render, RenderPosition} from '../render.js';
+import {render, RenderPosition} from '../framework/render.js';
+import { Filter } from '../enum.js';
 
 export default class BoardPresenter {
   #controlsTrip = null;
   #containerBodyPage = null;
 
-  #filterView = new FilterView();
-  #buttonNewEventView = new ButtonNewEventView();
+  #buttonNewEventView = null;
   #sortingView = new SortingView();
   #listRoutesView = new ListRoutesView();
   #pointModel = new PointModel();
   #emptyListView = new EmptyListView();
-  #newPointView = null;
+  #pointPresenter = null;
+
+  #collectionPointsPresenter = new Map();
 
   constructor(controlsTrip, containerBodyPage) {
     this.#controlsTrip = controlsTrip;
     this.#containerBodyPage = containerBodyPage;
   }
 
-  #deletePoint() {
-    if(!this.#newPointView) {return;}
-    this.#newPointView.element.remove();
-    this.#newPointView.removeElement();
-    this.#newPointView = null;
+  #setPointsPresenter(pointId, pointRoute) {
+    this.#collectionPointsPresenter.set(pointId, pointRoute);
   }
 
   #renderPoint(points) {
     points.map((point) => {
-      const pointRouteView = PointRouteView.getPointRouteView(point, this.buttonOpenEditFormHandler);
-      render(pointRouteView, this.#listRoutesView.getElement());
+      const pointPresenter = new PointPresenter(
+        this.#buttonOpenEditFormHandler,
+        this.#documentRemoveEventListenerHandler,
+        this.#listRoutesView
+      );
+      pointPresenter.init(point);
+      this.#setPointsPresenter(point.id, pointPresenter);
     });
   }
 
-  #render(points) {
-    render(this.#filterView, this.#controlsTrip);
-    render(this.#buttonNewEventView, this.#controlsTrip, RenderPosition.AFTEREND);
-
+  #checkPointsList(points) {
     if(points.length - 1 > 0) {
       render(this.#sortingView, this.#containerBodyPage);
       this.#renderPoint(points);
@@ -53,42 +53,65 @@ export default class BoardPresenter {
     }
   }
 
-  init() {
-    const points = this.#pointModel.getPoint();
-    this.#render(points);
-    this.#initializationHandlers();
+  #render(points) {
+    render(new FilterView(this.inputChangeFilterHandler), this.#controlsTrip);
+    this.#buttonNewEventView = new ButtonNewEventView(this.#buttonOpenCreateFormHandler);
+    render(this.#buttonNewEventView, this.#controlsTrip, RenderPosition.AFTEREND);
+
+    this.#checkPointsList(points);
   }
 
-  buttonCloseEditFormHandler = () => {
-    this.#deletePoint();
+  init() {
+    const points = this.#pointModel.getEverythingPoint();
+    this.#render(points);
+  }
+
+  inputChangeFilterHandler = (value) => {
+    switch(value) {
+      case Filter.EVERYTHING :
+        for(const pointPresenter of this.#collectionPointsPresenter.values()) {
+          pointPresenter.destroy();
+        }
+        this.#collectionPointsPresenter.clear();
+        this.#checkPointsList(this.#pointModel.getEverythingPoint());
+        break;
+      case Filter.FUTURE :
+        console.log(value);
+        break;
+    }
   };
 
-  buttonOpenEditFormHandler = () => {
-    this.#deletePoint();
+  #checkOpenForm() {
+    if(this.#pointPresenter) {
+      this.#pointPresenter.switchMode();
+    }
+    document.addEventListener('keydown', this.#listRoutesCloseFormHandler);
+  }
+
+  #buttonOpenEditFormHandler = (idPointPresenter) => {
+    this.#checkOpenForm();
     this.#buttonNewEventView.element.removeAttribute('disabled');
-    this.#newPointView = new NewPointView(true);
-    render(this.#newPointView, this.#listRoutesView.element, RenderPosition.AFTERBEGIN);
-    this.#newPointView.buttonCloseEditFormHandler(this.buttonCloseEditFormHandler);
-    document.addEventListener('keydown', this.#listRoutesCloseFormHandler);
+    this.#pointPresenter = this.#collectionPointsPresenter.get(idPointPresenter);
+    this.#pointPresenter.renderFormEditPoint();
   };
 
-  buttonOpenFormHandler = () => {
-    this.#deletePoint();
+  #buttonOpenCreateFormHandler = () => {
+    this.#checkOpenForm();
     this.#buttonNewEventView.element.setAttribute('disabled', '');
-    this.#newPointView = new NewPointView();
-    render(this.#newPointView, this.#listRoutesView.element, RenderPosition.AFTERBEGIN);
-    document.addEventListener('keydown', this.#listRoutesCloseFormHandler);
+    this.#pointPresenter = this.#collectionPointsPresenter.values().next().value;
+    this.#pointPresenter.renderFormCreateNewPoint();
+  };
+
+  #documentRemoveEventListenerHandler = () => {
+    this.#pointPresenter = null;
+    document.removeEventListener('keydown', this.#listRoutesCloseFormHandler);
   };
 
   #listRoutesCloseFormHandler = (evt) => {
     if (evt.key === 'Escape' || evt.key === 'Esc') {
+      this.#pointPresenter.switchMode();
       this.#buttonNewEventView.element.removeAttribute('disabled');
-      this.#deletePoint();
-      document.removeEventListener('keydown', this.#listRoutesCloseFormHandler);
+      this.#documentRemoveEventListenerHandler();
     }
   };
-
-  #initializationHandlers() {
-    this.#buttonNewEventView.buttonOpenFormHandler(this.buttonOpenFormHandler);
-  }
 }
