@@ -1,6 +1,7 @@
 export const PointType = {
   BUS: 'bus',
-  TAXI: 'taxi'
+  TAXI: 'taxi',
+  RESTAURANT: 'restaurant'
 };
 
 export const Filter = {
@@ -12,4 +13,9 @@ export const ModeSwitch = {
   DEFAULT: 'DEFAULT',
   CREATE: 'CREATE',
   EDIT: 'EDIT'
+};
+
+export const Sort = {
+  DAY: 'sort-day',
+  PRICE: 'sort-price'
 };

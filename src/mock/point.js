@@ -12,11 +12,21 @@ export const points = [
   },
   {
     basePrice: 50,
-    dataFrom: '2025-07-21T12:30:59',
-    dataTo: '2025-07-21T12:40:59',
+    dataFrom: '2025-07-10T12:30:59',
+    dataTo: '2025-07-10T12:40:59',
     destination: null,
     id: 2,
     _offers: [1,2],
     type: PointType.TAXI
   },
+
+  {
+    basePrice: 100,
+    dataFrom: '2025-08-10T11:30:59',
+    dataTo: '2025-09-07T12:00:59',
+    destination: null,
+    id: 3,
+    _offers: null,
+    type: PointType.RESTAURANT
+  }
 ];
