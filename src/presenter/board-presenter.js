@@ -6,25 +6,30 @@ import PointPresenter from './point-presenter.js';
 import PointModel from '../model/point-model.js';
 import EmptyListView from '../view/empty-list-view.js';
 
-import {render, RenderPosition} from '../framework/render.js';
-import { Filter } from '../enum.js';
+import {render, RenderPosition, remove} from '../framework/render.js';
+import { Filter, Sort } from '../enum.js';
+import { sortByDate, sortByPrice } from '../utils/sort.js';
 
 export default class BoardPresenter {
   #controlsTrip = null;
   #containerBodyPage = null;
 
   #buttonNewEventView = null;
-  #sortingView = new SortingView();
+  #sortingView = null;
   #listRoutesView = new ListRoutesView();
   #pointModel = new PointModel();
-  #emptyListView = new EmptyListView();
   #pointPresenter = null;
+  #emptyListView = null;
 
   #collectionPointsPresenter = new Map();
+  #points = [];
+  #mode = Filter.EVERYTHING;
 
   constructor(controlsTrip, containerBodyPage) {
     this.#controlsTrip = controlsTrip;
     this.#containerBodyPage = containerBodyPage;
+
+    this.#sortingView = new SortingView(this.inputChangeSortHandler);
   }
 
   #setPointsPresenter(pointId, pointRoute) {
@@ -43,12 +48,22 @@ export default class BoardPresenter {
     });
   }
 
+  #checkEmptyListView() {
+    if(this.#emptyListView) {
+      remove(this.#emptyListView);
+      this.#emptyListView = null;
+    }
+  }
+
   #checkPointsList(points) {
-    if(points.length - 1 > 0) {
+    if(points.length > 0) {
+      this.#checkEmptyListView();
       render(this.#sortingView, this.#containerBodyPage);
       this.#renderPoint(points);
       render(this.#listRoutesView, this.#containerBodyPage);
     }else{
+      remove(this.#sortingView);
+      this.#emptyListView = new EmptyListView(this.#mode);
       render(this.#emptyListView, this.#containerBodyPage);
     }
   }
@@ -62,21 +77,45 @@ export default class BoardPresenter {
   }
 
   init() {
-    const points = this.#pointModel.getEverythingPoint();
-    this.#render(points);
+    this.#points = this.#pointModel.getEverythingPoint();
+    this.#points = this.#sortingView.sortPointByDayOrPrice(this.#points);
+    this.#render(this.#points);
+  }
+
+  #getFilterOrSortPoint() {
+    for(const pointPresenter of this.#collectionPointsPresenter.values()) {
+      pointPresenter.destroy();
+    }
+    this.#collectionPointsPresenter.clear();
+    this.#checkPointsList(this.#points);
   }
 
   inputChangeFilterHandler = (value) => {
     switch(value) {
       case Filter.EVERYTHING :
-        for(const pointPresenter of this.#collectionPointsPresenter.values()) {
-          pointPresenter.destroy();
-        }
-        this.#collectionPointsPresenter.clear();
-        this.#checkPointsList(this.#pointModel.getEverythingPoint());
+        this.#mode = Filter.EVERYTHING;
+        this.#points = this.#pointModel.getEverythingPoint();
+        this.#points = this.#sortingView.sortPointByDayOrPrice(this.#points);
+        this.#getFilterOrSortPoint();
         break;
       case Filter.FUTURE :
-        console.log(value);
+        this.#mode = Filter.FUTURE;
+        this.#points = this.#pointModel.getFuturePoint();
+        this.#points = this.#sortingView.sortPointByDayOrPrice(this.#points);
+        this.#getFilterOrSortPoint();
+        break;
+    }
+  };
+
+  inputChangeSortHandler = (value) => {
+    switch(value) {
+      case Sort.DAY :
+        this.#points = sortByDate(this.#points);
+        this.#getFilterOrSortPoint();
+        break;
+      case Sort.PRICE :
+        this.#points = sortByPrice(this.#points);
+        this.#getFilterOrSortPoint();
         break;
     }
   };
