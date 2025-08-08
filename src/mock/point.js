@@ -7,7 +7,7 @@ export const points = [
     dataTo: '2025-07-21T12:00:59',
     destination: null,
     id: 1,
-    offers: null,
+    _offers: null,
     type: PointType.BUS
   },
   {
@@ -15,8 +15,8 @@ export const points = [
     dataFrom: '2025-07-21T12:30:59',
     dataTo: '2025-07-21T12:40:59',
     destination: null,
-    id: 1,
-    offers: [1,2],
+    id: 2,
+    _offers: [1,2],
     type: PointType.TAXI
   },
 ];

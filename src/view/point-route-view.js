@@ -1,4 +1,5 @@
-import {createElement} from '../render.js';
+import AbstractView from '../framework/view/abstract-view.js';
+
 import { getOffers } from '../utils/point.js';
 import { getDate, getTime } from '../utils/data-time.js';
 
@@ -41,45 +42,23 @@ function createPointRouteTemplate(point) {
     </li>`;
 }
 
-export default class PointRouteView {
+export default class PointRouteView extends AbstractView {
   #point = null;
-  #onButtonOpenEditForm = null;
+  #buttonOpenEditFormHandler = null;
+  _element = null;
 
   constructor(
     point,
     buttonOpenEditFormHandler
   ) {
+    super();
     this.#point = point;
-    this.#onButtonOpenEditForm = buttonOpenEditFormHandler;
+    this.#buttonOpenEditFormHandler = buttonOpenEditFormHandler;
+
+    this.element.querySelector('.event__rollup-btn').addEventListener('click', () => this.#buttonOpenEditFormHandler(point.id));
   }
 
-  static getPointRouteView(
-    point,
-    buttonOpenEditFormHandler
-  ) {
-    const pointRouteView = new PointRouteView(point, buttonOpenEditFormHandler);
-    pointRouteView.getElement();
-    pointRouteView.#buttonOpenEditFormHandler();
-    return pointRouteView;
-  }
-
-  #getTemplate() {
+  get template() {
     return createPointRouteTemplate(this.#point);
-  }
-
-  getElement() {
-    if (!this.element) {
-      this.element = createElement(this.#getTemplate());
-    }
-
-    return this.element;
-  }
-
-  removeElement() {
-    this.element = null;
-  }
-
-  #buttonOpenEditFormHandler() {
-    this.element.querySelector('.event__rollup-btn').addEventListener('click', () => this.#onButtonOpenEditForm());
   }
 }
