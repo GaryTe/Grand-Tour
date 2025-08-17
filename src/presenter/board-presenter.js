@@ -7,7 +7,7 @@ import PointModel from '../model/point-model.js';
 import EmptyListView from '../view/empty-list-view.js';
 
 import {render, RenderPosition, remove} from '../framework/render.js';
-import { Filter, Sort } from '../enum.js';
+import { Filter, Sort, ModeSortingView } from '../enum.js';
 import { sortByDate, sortByPrice } from '../utils/sort.js';
 
 export default class BoardPresenter {
@@ -24,12 +24,14 @@ export default class BoardPresenter {
   #collectionPointsPresenter = new Map();
   #points = [];
   #mode = Filter.EVERYTHING;
+  #modeSortingView = ModeSortingView.DELETE;
 
   constructor(controlsTrip, containerBodyPage) {
     this.#controlsTrip = controlsTrip;
     this.#containerBodyPage = containerBodyPage;
 
     this.#sortingView = new SortingView(this.inputChangeSortHandler);
+    this.#modeSortingView = ModeSortingView.CREATE;
   }
 
   #setPointsPresenter(pointId, pointRoute) {
@@ -41,7 +43,8 @@ export default class BoardPresenter {
       const pointPresenter = new PointPresenter(
         this.#buttonOpenEditFormHandler,
         this.#documentRemoveEventListenerHandler,
-        this.#listRoutesView
+        this.#listRoutesView,
+        this. #onListRoutesCloseForm
       );
       pointPresenter.init(point);
       this.#setPointsPresenter(point.id, pointPresenter);
@@ -59,10 +62,15 @@ export default class BoardPresenter {
     if(points.length > 0) {
       this.#checkEmptyListView();
       render(this.#sortingView, this.#containerBodyPage);
+      if(this.#modeSortingView === ModeSortingView.DELETE) {
+        this.#sortingView.restoreHandlers();
+        this.#modeSortingView = ModeSortingView.CREATE;
+      }
       this.#renderPoint(points);
       render(this.#listRoutesView, this.#containerBodyPage);
     }else{
       remove(this.#sortingView);
+      this.#modeSortingView = ModeSortingView.DELETE;
       this.#emptyListView = new EmptyListView(this.#mode);
       render(this.#emptyListView, this.#containerBodyPage);
     }
@@ -146,11 +154,19 @@ export default class BoardPresenter {
     document.removeEventListener('keydown', this.#listRoutesCloseFormHandler);
   };
 
+  #closeForm = () => {
+    this.#pointPresenter.switchMode();
+    this.#buttonNewEventView.element.removeAttribute('disabled');
+    this.#documentRemoveEventListenerHandler();
+  };
+
   #listRoutesCloseFormHandler = (evt) => {
     if (evt.key === 'Escape' || evt.key === 'Esc') {
-      this.#pointPresenter.switchMode();
-      this.#buttonNewEventView.element.removeAttribute('disabled');
-      this.#documentRemoveEventListenerHandler();
+      this.#closeForm();
     }
+  };
+
+  #onListRoutesCloseForm = () => {
+    this.#closeForm();
   };
 }

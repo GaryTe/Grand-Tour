@@ -1,5 +1,7 @@
 import PointRouteView from '../view/point-route-view';
 import NewPointView from '../view/new-point-view';
+import DestinationModel from '../model/destination-model';
+import RouteModel from '../model/route-model';
 
 import { render, RenderPosition, remove, replace } from '../framework/render';
 import { ModeSwitch } from '../enum';
@@ -10,7 +12,10 @@ export default class PointPresenter {
 
   #buttonOpenEditFormHandler = null;
   #documentRemoveEventListenerHandler = null;
+  #listRoutesCloseFormHandler = null;
 
+  #destinationModel = new DestinationModel();
+  #routeModel = new RouteModel();
   #pointRouteView = null;
   #listRoutesView = null;
   #form = null;
@@ -18,11 +23,13 @@ export default class PointPresenter {
   constructor(
     buttonOpenEditFormHandler,
     documentRemoveEventListenerHandler,
-    listRoutesView
+    listRoutesView,
+    listRoutesCloseFormHandler
   ) {
     this.#buttonOpenEditFormHandler = buttonOpenEditFormHandler;
     this.#documentRemoveEventListenerHandler = documentRemoveEventListenerHandler;
     this.#listRoutesView = listRoutesView;
+    this.#listRoutesCloseFormHandler = listRoutesCloseFormHandler;
   }
 
   #renderPoint(point) {
@@ -39,22 +46,52 @@ export default class PointPresenter {
     this.#renderPoint(point);
   }
 
+  #formPublishPointHandler = (dataNewPoint) => {
+    this.#listRoutesCloseFormHandler();
+    console.log(dataNewPoint);
+  };
+
+  #formCloseHandler = () => {
+    this.#listRoutesCloseFormHandler();
+  };
+
   #buttonCloseEditFormHandler = () => {
     this.#removeFormEditPoint();
     this.#documentRemoveEventListenerHandler();
   };
 
+  #formGetDestinationHandle = (nameDestination) => {
+    const [destination] = this.#destinationModel.getDestinationName(nameDestination);
+    return destination;
+  };
+
+  #formGetRouteHandle = (nameRoute) => this.#routeModel.getRouteName(nameRoute);
+
   renderFormCreateNewPoint() {
     this.switchMode();
     this.#mode = ModeSwitch.CREATE;
-    this.#form = new NewPointView();
+    this.#form = new NewPointView(
+      false,
+      null,
+      this.#formPublishPointHandler,
+      this.#formCloseHandler,
+      this.#formGetDestinationHandle,
+      this.#formGetRouteHandle
+    );
     render(this.#form, this.#listRoutesView.element, RenderPosition.AFTERBEGIN);
   }
 
   renderFormEditPoint() {
     this.switchMode();
     this.#mode = ModeSwitch.EDIT;
-    this.#form = new NewPointView(true, this.#buttonCloseEditFormHandler);
+    this.#form = new NewPointView(
+      true,
+      this.#buttonCloseEditFormHandler,
+      null,
+      null,
+      this.#formGetDestinationHandle,
+      this.#formGetRouteHandle
+    );
     replace(this.#form, this.#pointRouteView);
   }
 

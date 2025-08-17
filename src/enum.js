@@ -19,3 +19,8 @@ export const Sort = {
   DAY: 'sort-day',
   PRICE: 'sort-price'
 };
+
+export const ModeSortingView = {
+  CREATE: 'CREATE',
+  DELETE: 'DELETE'
+};

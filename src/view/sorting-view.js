@@ -55,8 +55,30 @@ export default class SortingView extends AbstractView {
     super();
     this.#inputChangeSortHandler = inputChangeSortHandler;
 
-    this.#searchElementInput();
+    this.restoreHandlers();
+  }
 
+  get template() {
+    return createSortingTemplate(this.#mode);
+  }
+
+  restoreHandlers = () => {
+    this.#searchElementInput();
+    this.#addEventListener();
+  };
+
+  #searchElementInput() {
+    const inputsList = this.element.querySelectorAll('.trip-sort__input');
+    inputsList.forEach((input) => {
+      if(input.defaultValue === Sort.DAY) {
+        this.#inputDay = input;
+      } else if(input.defaultValue === Sort.PRICE) {
+        this.#inputPrice = input;
+      }
+    });
+  }
+
+  #addEventListener() {
     this.#inputDay.addEventListener('change', (evt) => {
       evt.preventDefault();
       this.#mode = Sort.DAY;
@@ -70,23 +92,8 @@ export default class SortingView extends AbstractView {
     });
   }
 
-  get template() {
-    return createSortingTemplate(this.#mode);
-  }
-
-  #searchElementInput() {
-    const inputsList = this.element.querySelectorAll('.trip-sort__input');
-    inputsList.forEach((input) => {
-      if(input.defaultValue === Sort.DAY) {
-        this.#inputDay = input;
-      } else if(input.defaultValue === Sort.PRICE) {
-        this.#inputPrice = input;
-      }
-    });
-  }
-
   sortPointByDayOrPrice(points) {
-    if(points.length === 0) {return;}
+    if(points.length === 0) {return points;}
     if(this.#mode === Sort.PRICE) {
       return sortByPrice(points);
     }
