@@ -24,3 +24,8 @@ export const ModeSortingView = {
   CREATE: 'CREATE',
   DELETE: 'DELETE'
 };
+
+export const ModeDate = {
+  DATE_FROM: 'dataFrom',
+  DATE_TO: 'dataTo'
+};
