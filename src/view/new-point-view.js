@@ -1,8 +1,11 @@
 import { nanoid } from 'nanoid';
+import flatpickr from 'flatpickr';
+
+import 'flatpickr/dist/flatpickr.min.css';
 
 import AbstractStatefulView from '../framework/view/abstract-stateful-view';
 
-import { PointType } from '../enum';
+import { PointType, ModeDate } from '../enum';
 
 function getPhotosDestination(photos) {
   return photos.map(({src, description}) => `<img class="event__photo" src=${src} alt=${description}>`).join('');
@@ -141,10 +144,10 @@ function createNewPointTemplate(edit, state, nameOffersList) {
 
                   <div class="event__field-group  event__field-group--time">
                     <label class="visually-hidden" for="event-start-time-1">From</label>
-                    <input class="event__input  event__input--time" id="event-start-time-1" type="text" name="event-start-time" value="19/03/19 00:00">
+                    <input class="event__input  event__input--time" id="event-start-time-1" type="text" name="event-start-time" value="dataFrom">
                     &mdash;
                     <label class="visually-hidden" for="event-end-time-1">To</label>
-                    <input class="event__input  event__input--time" id="event-end-time-1" type="text" name="event-end-time" value="19/03/19 00:00">
+                    <input class="event__input  event__input--time" id="event-end-time-1" type="text" name="event-end-time" value="dataTo">
                   </div>
 
                   <div class="event__field-group  event__field-group--price">
@@ -191,6 +194,7 @@ function createNewPointTemplate(edit, state, nameOffersList) {
 export default class NewPointView extends AbstractStatefulView {
   #edit = false;
   #nameOffersList = [];
+  #datepickers = [];
 
   #buttonCloseEditFormHandler = null;
   #onFormPublishPoint = null;
@@ -210,10 +214,12 @@ export default class NewPointView extends AbstractStatefulView {
     this._setState({
       type: {
         type: '',
-        offers: []
+        offers: [],
       },
       basePrice: null,
-      destination: null
+      destination: null,
+      dateFrom: new Date(),
+      dateTo: new Date(),
     });
     this.#edit = edit;
     this.#buttonCloseEditFormHandler = buttonCloseEditFormHandler;
@@ -231,6 +237,30 @@ export default class NewPointView extends AbstractStatefulView {
       this._state,
       this.#nameOffersList
     );
+  }
+
+  #setDatepicker() {
+    const dateElements = this.element.querySelectorAll('.event__input--time');
+
+    dateElements.forEach((element) => {
+      const calendar = flatpickr(
+        element,
+        {
+          defaultDate: `${element.defaultValue === ModeDate.DATE_FROM ? this._state.dateFrom : this._state.dateTo}`,
+          enableTime: true,
+          dateFormat: 'd/m/y H:i'
+        },
+      );
+
+      if(element.defaultValue === ModeDate.DATE_FROM) {
+        calendar.config.maxDate = this._state.dateTo;
+        calendar.config.onClose.push(this.#elementDateFromChangeHandler);
+      }else{
+        calendar.config.minDate = this._state.dateFrom;
+        calendar.config.onClose.push(this.#elementDateToChangeHandler);
+      }
+      this.#datepickers.push(calendar);
+    });
   }
 
   _restoreHandlers = () => {
@@ -253,6 +283,8 @@ export default class NewPointView extends AbstractStatefulView {
     }else{
       this.#onFormClose();
     }
+
+    this.#setDatepicker();
   };
 
   #typePointChangeHandler = (evt) => {
@@ -267,6 +299,16 @@ export default class NewPointView extends AbstractStatefulView {
     this.updateElement({destination: destination});
   };
 
+  #elementDateFromChangeHandler = (selectedDates) => {
+    const date = new Date(selectedDates[0]).toISOString();
+    this.updateElement({dateFrom: date});
+  };
+
+  #elementDateToChangeHandler = (selectedDates) => {
+    const date = new Date(selectedDates[0]).toISOString();
+    this.updateElement({dateTo: date});
+  };
+
   #priceChangeHandler = (evt) => {
     evt.preventDefault();
 
@@ -275,6 +317,7 @@ export default class NewPointView extends AbstractStatefulView {
   };
 
   #offerGetValueHandler = (evt) => {
+    evt.preventDefault();
     const nameOffer = evt.target.labels[0].children[0].innerText;
 
     if(this.#nameOffersList.length === 0) {
@@ -329,5 +372,16 @@ export default class NewPointView extends AbstractStatefulView {
       this.#formCloseHandler();
       buttonCloseForm.removeEventListener('click', this.#formCloseHandler);
     });
+  }
+
+  removeElement() {
+    super.removeElement();
+
+    if (this.#datepickers.length > 0) {
+      this.#datepickers.forEach((datepicker) => {
+        datepicker.destroy();
+      });
+      this.#datepickers = [];
+    }
   }
 }
