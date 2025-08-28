@@ -13,6 +13,7 @@ export default class PointPresenter {
   #buttonOpenEditFormHandler = null;
   #documentRemoveEventListenerHandler = null;
   #listRoutesCloseFormHandler = null;
+  #handleViewAction = null;
 
   #destinationModel = new DestinationModel();
   #routeModel = new RouteModel();
@@ -24,12 +25,18 @@ export default class PointPresenter {
     buttonOpenEditFormHandler,
     documentRemoveEventListenerHandler,
     listRoutesView,
-    listRoutesCloseFormHandler
+    listRoutesCloseFormHandler,
+    handleViewAction
   ) {
     this.#buttonOpenEditFormHandler = buttonOpenEditFormHandler;
     this.#documentRemoveEventListenerHandler = documentRemoveEventListenerHandler;
     this.#listRoutesView = listRoutesView;
     this.#listRoutesCloseFormHandler = listRoutesCloseFormHandler;
+    this.#handleViewAction = handleViewAction;
+  }
+
+  get point() {
+    return this.#point;
   }
 
   #renderPoint(point) {
@@ -46,9 +53,14 @@ export default class PointPresenter {
     this.#renderPoint(point);
   }
 
-  #formPublishPointHandler = (dataNewPoint) => {
+  #formPublishPointHandler = (dataNewPoint, parameter) => {
     this.#listRoutesCloseFormHandler();
-    console.log(dataNewPoint);
+    this.#handleViewAction(dataNewPoint, parameter);
+  };
+
+  #buttonDeletePointHandler = (point, parameter) => {
+    this.#listRoutesCloseFormHandler();
+    this.#handleViewAction(point, parameter);
   };
 
   #formCloseHandler = () => {
@@ -71,26 +83,39 @@ export default class PointPresenter {
     this.switchMode();
     this.#mode = ModeSwitch.CREATE;
     this.#form = new NewPointView(
+      {
+        type: '',
+        offers: [],
+        basePrice: null,
+        destination: null,
+        dateFrom: new Date().toISOString(),
+        dateTo: new Date().toISOString(),
+      },
       false,
       null,
       this.#formPublishPointHandler,
       this.#formCloseHandler,
       this.#formGetDestinationHandle,
-      this.#formGetRouteHandle
+      this.#formGetRouteHandle,
+      null
     );
     render(this.#form, this.#listRoutesView.element, RenderPosition.AFTERBEGIN);
   }
 
-  renderFormEditPoint() {
+  renderFormEditPoint(dataPoint) {
     this.switchMode();
     this.#mode = ModeSwitch.EDIT;
+    const [destination] = this.#destinationModel.getDestinationId(dataPoint.destination);
+
     this.#form = new NewPointView(
+      {...dataPoint, destination},
       true,
       this.#buttonCloseEditFormHandler,
-      null,
+      this.#formPublishPointHandler,
       null,
       this.#formGetDestinationHandle,
-      this.#formGetRouteHandle
+      this.#formGetRouteHandle,
+      this.#buttonDeletePointHandler
     );
     replace(this.#form, this.#pointRouteView);
   }
@@ -104,6 +129,18 @@ export default class PointPresenter {
     remove(this.#form);
     this.#form = null;
     this.#mode = ModeSwitch.DEFAULT;
+  }
+
+  replaceOldPointRouteViewToNewPointRouteView(point) {
+    const newPointRouteView = new PointRouteView(
+      point,
+      this.#buttonOpenEditFormHandler
+    );
+
+    replace(newPointRouteView, this.#pointRouteView);
+
+    this.#point = point;
+    this.#pointRouteView = newPointRouteView;
   }
 
   switchMode() {

@@ -5,20 +5,20 @@ import 'flatpickr/dist/flatpickr.min.css';
 
 import AbstractStatefulView from '../framework/view/abstract-stateful-view';
 
-import { PointType, ModeDate } from '../enum';
+import { PointType, ModeDate, UserAction, UpdateType } from '../enum';
 
 function getPhotosDestination(photos) {
   return photos.map(({src, description}) => `<img class="event__photo" src=${src} alt=${description}>`).join('');
 }
 
-function getOffersRoute({offers}, nameOffersList) {
-  return offers.map(({title, price}) => `<div class="event__offer-selector">
+function getOffersRoute(offers, nameOffersList) {
+  return nameOffersList.map(({title, price}) => `<div class="event__offer-selector">
               <input
               class="event__offer-checkbox  visually-hidden"
               id="event-offer-${title}"
               type="checkbox"
               name="event-offer-${title}"
-              ${nameOffersList.find((offer) => offer === title) ? 'checked' : ''}
+              ${offers.find((offer) => offer.title === title) ? 'checked' : ''}
               >
               <label class="event__offer-label" for="event-offer-${title}">
                 <span class="event__offer-title">${title}</span>
@@ -31,6 +31,7 @@ function getOffersRoute({offers}, nameOffersList) {
 function createNewPointTemplate(edit, state, nameOffersList) {
   const {
     type,
+    offers,
     basePrice,
     destination
   } = state;
@@ -45,7 +46,7 @@ function createNewPointTemplate(edit, state, nameOffersList) {
                       <img
                       class="event__type-icon" width="17"
                       height="17"
-                      ${type.type.length === 0 ? 'src="img/icons"' : `src=img/icons/${type.type}.png`}
+                      ${type.length === 0 ? 'src="img/icons"' : `src=img/icons/${type}.png`}
                       alt="Event type icon">
                     </label>
                     <input class="event__type-toggle  visually-hidden" id="event-type-toggle-1" type="checkbox">
@@ -61,7 +62,7 @@ function createNewPointTemplate(edit, state, nameOffersList) {
                           type="radio"
                           name="event-type"
                           value="taxi"
-                          ${type.type === PointType.TAXI ? 'checked' : ''}
+                          ${type === PointType.TAXI ? 'checked' : ''}
                           >
                           <label class="event__type-label  event__type-label--taxi" for="event-type-taxi-1">Taxi</label>
                         </div>
@@ -73,7 +74,7 @@ function createNewPointTemplate(edit, state, nameOffersList) {
                           type="radio"
                           name="event-type"
                           value="bus"
-                          ${type.type === PointType.BUS ? 'checked' : ''}
+                          ${type === PointType.BUS ? 'checked' : ''}
                           >
                           <label class="event__type-label  event__type-label--bus" for="event-type-bus-1">Bus</label>
                         </div>
@@ -115,7 +116,7 @@ function createNewPointTemplate(edit, state, nameOffersList) {
                           type="radio"
                           name="event-type"
                           value="restaurant"
-                          ${type.type === PointType.RESTAURANT ? 'checked' : ''}
+                          ${type === PointType.RESTAURANT ? 'checked' : ''}
                           >
                           <label class="event__type-label  event__type-label--restaurant" for="event-type-restaurant-1">Restaurant</label>
                         </div>
@@ -125,7 +126,7 @@ function createNewPointTemplate(edit, state, nameOffersList) {
 
                   <div class="event__field-group  event__field-group--destination">
                     <label class="event__label  event__type-output" for="event-destination-1">
-                      ${!type ? '' : type.type}
+                      ${!type ? '' : type}
                     </label>
                     <input
                     class="event__input  event__input--destination"
@@ -168,11 +169,11 @@ function createNewPointTemplate(edit, state, nameOffersList) {
                   ${!edit ? '' : '<button class="event__rollup-btn" type="button"> <span class="visually-hidden">Open event</span> </button>'}
                 </header>
                 <section class="event__details">
-                  ${type.offers.length === 0 ? '' : `<section class="event__section  event__section--offers">
+                  ${nameOffersList.length === 0 ? '' : `<section class="event__section  event__section--offers">
                     <h3 class="event__section-title  event__section-title--offers">Offers</h3>
 
                     <div class="event__available-offers">
-                    ${getOffersRoute(type, nameOffersList)}
+                    ${getOffersRoute(offers, nameOffersList)}
                     </div>
                   </section>`}
                   ${!destination || !destination.description && destination.pictures.length === 0 ? '' : `<section class="event__section  event__section--destination">
@@ -201,33 +202,29 @@ export default class NewPointView extends AbstractStatefulView {
   #formCloseHandler = null;
   #formGetDestinationHandle = null;
   #formGetRouteHandle = null;
+  #buttonDeletePointHandler = null;
 
   constructor(
-    edit = false,
+    dataPoint,
+    edit,
     buttonCloseEditFormHandler,
     formPublishPointHandler,
     formCloseHandler,
     formGetDestinationHandle,
-    formGetRouteHandle
+    formGetRouteHandle,
+    buttonDeletePointHandler
   ) {
     super();
-    this._setState({
-      type: {
-        type: '',
-        offers: [],
-      },
-      basePrice: null,
-      destination: null,
-      dateFrom: new Date(),
-      dateTo: new Date(),
-    });
+    this._setState({...dataPoint});
     this.#edit = edit;
     this.#buttonCloseEditFormHandler = buttonCloseEditFormHandler;
     this.#onFormPublishPoint = formPublishPointHandler;
     this.#formCloseHandler = formCloseHandler;
     this.#formGetDestinationHandle = formGetDestinationHandle;
     this.#formGetRouteHandle = formGetRouteHandle;
+    this.#buttonDeletePointHandler = buttonDeletePointHandler;
 
+    this.#getOffersList(dataPoint.type);
     this._restoreHandlers();
   }
 
@@ -237,6 +234,13 @@ export default class NewPointView extends AbstractStatefulView {
       this._state,
       this.#nameOffersList
     );
+  }
+
+  #getOffersList(typePoint) {
+    if(typePoint.length > 0) {
+      const {offers} = this.#formGetRouteHandle(typePoint);
+      this.#nameOffersList = [...offers];
+    }
   }
 
   #setDatepicker() {
@@ -273,13 +277,14 @@ export default class NewPointView extends AbstractStatefulView {
     this.element.querySelector('.event__save-btn')
       .addEventListener('click', this.#formPublishPointHandler);
 
-    if(this._state.type.offers.length > 0) {
+    if(this.#nameOffersList.length > 0) {
       this.element.querySelector('.event__available-offers')
         .addEventListener('change', this.#offerGetValueHandler);
     }
 
     if(this.#edit) {
       this.#onButtonCloseEditForm();
+      this.#onButtonDeletePoint();
     }else{
       this.#onFormClose();
     }
@@ -289,8 +294,9 @@ export default class NewPointView extends AbstractStatefulView {
 
   #typePointChangeHandler = (evt) => {
     evt.preventDefault();
-    const routes = this.#formGetRouteHandle(evt.target.value);
-    this.updateElement({type: routes});
+    const {type} = this.#formGetRouteHandle(evt.target.value);
+    this.#getOffersList(type);
+    this.updateElement({type});
   };
 
   #typeDestinationChangeHandler = (evt) => {
@@ -320,42 +326,43 @@ export default class NewPointView extends AbstractStatefulView {
     evt.preventDefault();
     const nameOffer = evt.target.labels[0].children[0].innerText;
 
-    if(this.#nameOffersList.length === 0) {
-      this.#nameOffersList.push(nameOffer);
+    if(this.#nameOffersList.find((offer) => offer.title === nameOffer)) {
+      this.#nameOffersList.forEach((offer) => {
+        if(offer.title === nameOffer) {
+          this._state.offers.push(offer);
+        }
+      });
       return;
     }
 
-    if(!this.#nameOffersList.find((offer) => offer === nameOffer)) {
-      this.#nameOffersList.push(nameOffer);
-      return;
-    }
-
-    const offersList = this.#nameOffersList.filter((offer) => offer !== nameOffer);
-    this.#nameOffersList = offersList;
+    this._state.offers = this.#nameOffersList.filter((offer) => offer.title !== nameOffer);
   };
 
   #formPublishPointHandler = (evt) => {
     evt.preventDefault();
     const offersList = [];
+    let parameter = {};
 
-    const {destination, type: {type, offers}} = this._state;
+    const {destination, type, offers} = this._state;
 
     if(offers.length > 0) {
       offers.forEach((offer) => {
-        for(const value of this.#nameOffersList) {
-          if(value === offer.title) {offersList.push(offer.id);}
-        }
+        offersList.push(offer.id);
       });
     }
 
     const point = {
       ...this._state,
       destination: destination.id,
-      offers: offersList,
+      _offers: offersList,
       type: type,
-      id: nanoid()
+      id: !this.#edit ? nanoid() : this._state.id
     };
-    this.#onFormPublishPoint(point);
+    delete point.offers;
+
+    parameter = !this.#edit ? {actionType: UserAction.ADD_TASK, updateType: UpdateType.MINOR} : {actionType: UserAction.UPDATE_TASK, updateType: UpdateType.PATCH};
+
+    this.#onFormPublishPoint(point, parameter);
   };
 
   #onButtonCloseEditForm() {
@@ -363,6 +370,14 @@ export default class NewPointView extends AbstractStatefulView {
     buttonCloseEditForm.addEventListener('click', () => {
       this.#buttonCloseEditFormHandler();
       buttonCloseEditForm.removeEventListener('click', this.#buttonCloseEditFormHandler);
+    });
+  }
+
+  #onButtonDeletePoint() {
+    const buttonDeletePoint = this.element.querySelector('.event__reset-btn');
+    buttonDeletePoint.addEventListener('click', () => {
+      this.#buttonDeletePointHandler(this._state, {actionType: UserAction.DELETE_TASK, updateType: UpdateType.PATCH});
+      buttonDeletePoint.removeEventListener('click', this.#onButtonDeletePoint);
     });
   }
 

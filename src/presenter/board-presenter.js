@@ -7,7 +7,7 @@ import PointModel from '../model/point-model.js';
 import EmptyListView from '../view/empty-list-view.js';
 
 import {render, RenderPosition, remove} from '../framework/render.js';
-import { Filter, Sort, ModeSortingView } from '../enum.js';
+import { Filter, Sort, ModeSortingView, UserAction, UpdateType } from '../enum.js';
 import { sortByDate, sortByPrice } from '../utils/sort.js';
 
 export default class BoardPresenter {
@@ -44,7 +44,8 @@ export default class BoardPresenter {
         this.#buttonOpenEditFormHandler,
         this.#documentRemoveEventListenerHandler,
         this.#listRoutesView,
-        this. #onListRoutesCloseForm
+        this.#onListRoutesCloseForm,
+        this.#handleViewAction
       );
       pointPresenter.init(point);
       this.#setPointsPresenter(point.id, pointPresenter);
@@ -128,6 +129,43 @@ export default class BoardPresenter {
     }
   };
 
+  #handleViewAction = (update, {actionType, updateType}) => {
+    switch (actionType) {
+      case UserAction.ADD_TASK:
+        this.#pointModel.addObserver(this.#handleModelEvent);
+        this.#pointModel.addPoint(update, updateType);
+        break;
+      case UserAction.UPDATE_TASK:
+        this.#pointModel.addObserver(this.#handleModelEvent);
+        this.#pointModel.updatePoint(update, updateType);
+        break;
+      case UserAction.DELETE_TASK:
+        this.#pointModel.addObserver(this.#handleDeleteEvent);
+        this.#pointModel.updatePoint(update, updateType);
+        break;
+    }
+  };
+
+  #handleModelEvent = (updateType, point) => {
+    switch (updateType) {
+      case UpdateType.MINOR:
+        this.inputChangeFilterHandler(this.#mode);
+        this.#pointModel.removeObserver(this.#handleModelEvent);
+        break;
+      case UpdateType.PATCH:
+        this.#collectionPointsPresenter.get(point.id).replaceOldPointRouteViewToNewPointRouteView(point);
+        this.#pointModel.removeObserver(this.#handleModelEvent);
+        break;
+    }
+  };
+
+  #handleDeleteEvent = (_updateType, point) => {
+    const pointPresenter = this.#collectionPointsPresenter.get(point.id);
+
+    pointPresenter.destroy();
+    this.#collectionPointsPresenter.delete(point.id);
+  };
+
   #checkOpenForm() {
     if(this.#pointPresenter) {
       this.#pointPresenter.switchMode();
@@ -139,7 +177,7 @@ export default class BoardPresenter {
     this.#checkOpenForm();
     this.#buttonNewEventView.element.removeAttribute('disabled');
     this.#pointPresenter = this.#collectionPointsPresenter.get(idPointPresenter);
-    this.#pointPresenter.renderFormEditPoint();
+    this.#pointPresenter.renderFormEditPoint(this.#pointPresenter.point);
   };
 
   #buttonOpenCreateFormHandler = () => {
