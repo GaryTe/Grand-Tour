@@ -1,25 +1,27 @@
 import dayjs from 'dayjs';
 
+import Observable from '../framework/observable';
+
 import { points } from '../mock/point';
 import { offers } from '../mock/offer';
 
-export default class PointModel {
+export default class PointModel extends Observable {
 
   getEverythingPoint() {
-    const pointsList = this.#collectionEverythingDataPoint();
+    const pointsList = this.#collectionEverythingDataPoint(points);
 
     return pointsList;
   }
 
-  #collectionEverythingDataPoint() {
+  #collectionEverythingDataPoint(pointList) {
     const pointsList = [];
-    const copyPointsList = points.slice();
+    const copyPointsList = pointList.slice();
 
     copyPointsList.forEach((point) => {
       const idOffers = point._offers;
       let newPoint = {};
 
-      if(idOffers && idOffers.length - 1 > 0) {
+      if(idOffers && idOffers.length > 0) {
         newPoint.offers = [];
 
         for(const id of idOffers) {
@@ -38,7 +40,13 @@ export default class PointModel {
 
         pointsList.push(newPoint);
       }else{
-        pointsList.push(point);
+        const editPoint = {
+          ...point,
+          offers: point._offers
+        };
+
+        delete editPoint._offers;
+        pointsList.push(editPoint);
       }
     });
 
@@ -78,5 +86,26 @@ export default class PointModel {
     });
 
     return futurePointsList;
+  }
+
+  addPoint(update, updateType) {
+    points.push(update);
+
+    this._notify(updateType);
+  }
+
+  updatePoint(update, updateType) {
+    points.filter((point) => point.id !== update.id);
+    points.push(update);
+
+    const [updatePoint] = this.#collectionEverythingDataPoint([update]);
+
+    this._notify(updateType, updatePoint);
+  }
+
+  deletePoint(deletePoint, updateType) {
+    points.filter((point) => point.id !== deletePoint.id);
+
+    this._notify(updateType, deletePoint);
   }
 }
