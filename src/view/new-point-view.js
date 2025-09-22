@@ -1,4 +1,4 @@
-import { nanoid } from 'nanoid';
+//import { nanoid } from 'nanoid';
 import flatpickr from 'flatpickr';
 
 import 'flatpickr/dist/flatpickr.min.css';
@@ -80,32 +80,32 @@ function createNewPointTemplate(edit, state, nameOffersList) {
                         </div>
 
                         <div class="event__type-item">
-                          <input id="event-type-train-1" class="event__type-input  visually-hidden" type="radio" name="event-type" value="train">
+                          <input id="event-type-train-1" class="event__type-input  visually-hidden" type="radio" name="event-type" value="train" disabled>
                           <label class="event__type-label  event__type-label--train" for="event-type-train-1">Train</label>
                         </div>
 
                         <div class="event__type-item">
-                          <input id="event-type-ship-1" class="event__type-input  visually-hidden" type="radio" name="event-type" value="ship">
+                          <input id="event-type-ship-1" class="event__type-input  visually-hidden" type="radio" name="event-type" value="ship" disabled>
                           <label class="event__type-label  event__type-label--ship" for="event-type-ship-1">Ship</label>
                         </div>
 
                         <div class="event__type-item">
-                          <input id="event-type-drive-1" class="event__type-input  visually-hidden" type="radio" name="event-type" value="drive">
+                          <input id="event-type-drive-1" class="event__type-input  visually-hidden" type="radio" name="event-type" value="drive" disabled>
                           <label class="event__type-label  event__type-label--drive" for="event-type-drive-1">Drive</label>
                         </div>
 
                         <div class="event__type-item">
-                          <input id="event-type-flight-1" class="event__type-input  visually-hidden" type="radio" name="event-type" value="flight">
+                          <input id="event-type-flight-1" class="event__type-input  visually-hidden" type="radio" name="event-type" value="flight" disabled>
                           <label class="event__type-label  event__type-label--flight" for="event-type-flight-1">Flight</label>
                         </div>
 
                         <div class="event__type-item">
-                          <input id="event-type-check-in-1" class="event__type-input  visually-hidden" type="radio" name="event-type" value="check-in">
+                          <input id="event-type-check-in-1" class="event__type-input  visually-hidden" type="radio" name="event-type" value="check-in" disabled>
                           <label class="event__type-label  event__type-label--check-in" for="event-type-check-in-1">Check-in</label>
                         </div>
 
                         <div class="event__type-item">
-                          <input id="event-type-sightseeing-1" class="event__type-input  visually-hidden" type="radio" name="event-type" value="sightseeing">
+                          <input id="event-type-sightseeing-1" class="event__type-input  visually-hidden" type="radio" name="event-type" value="sightseeing" disabled>
                           <label class="event__type-label  event__type-label--sightseeing" for="event-type-sightseeing-1">Sightseeing</label>
                         </div>
 
@@ -204,6 +204,10 @@ export default class NewPointView extends AbstractStatefulView {
   #formGetRouteHandle = null;
   #buttonDeletePointHandler = null;
 
+  #divTypeList = null;
+  #inputDestination = null;
+  #inputPrice = null;
+
   constructor(
     dataPoint,
     edit,
@@ -212,7 +216,8 @@ export default class NewPointView extends AbstractStatefulView {
     formCloseHandler,
     formGetDestinationHandle,
     formGetRouteHandle,
-    buttonDeletePointHandler
+    buttonDeletePointHandler,
+    offers
   ) {
     super();
     this._setState({...dataPoint});
@@ -223,8 +228,8 @@ export default class NewPointView extends AbstractStatefulView {
     this.#formGetDestinationHandle = formGetDestinationHandle;
     this.#formGetRouteHandle = formGetRouteHandle;
     this.#buttonDeletePointHandler = buttonDeletePointHandler;
+    this.#nameOffersList = [...offers];
 
-    this.#getOffersList(dataPoint.type);
     this._restoreHandlers();
   }
 
@@ -236,13 +241,6 @@ export default class NewPointView extends AbstractStatefulView {
     );
   }
 
-  #getOffersList(typePoint) {
-    if(typePoint.length > 0) {
-      const {offers} = this.#formGetRouteHandle(typePoint);
-      this.#nameOffersList = [...offers];
-    }
-  }
-
   #setDatepicker() {
     const dateElements = this.element.querySelectorAll('.event__input--time');
 
@@ -250,17 +248,17 @@ export default class NewPointView extends AbstractStatefulView {
       const calendar = flatpickr(
         element,
         {
-          defaultDate: `${element.defaultValue === ModeDate.DATE_FROM ? this._state.dateFrom : this._state.dateTo}`,
+          defaultDate: `${element.defaultValue === ModeDate.DATE_FROM ? this._state.dataFrom : this._state.dataTo}`,
           enableTime: true,
           dateFormat: 'd/m/y H:i'
         },
       );
 
       if(element.defaultValue === ModeDate.DATE_FROM) {
-        calendar.config.maxDate = this._state.dateTo;
+        calendar.config.maxDate = this._state.dataTo;
         calendar.config.onClose.push(this.#elementDateFromChangeHandler);
       }else{
-        calendar.config.minDate = this._state.dateFrom;
+        calendar.config.minDate = this._state.dataFrom;
         calendar.config.onClose.push(this.#elementDateToChangeHandler);
       }
       this.#datepickers.push(calendar);
@@ -268,11 +266,17 @@ export default class NewPointView extends AbstractStatefulView {
   }
 
   _restoreHandlers = () => {
-    this.element.querySelector('.event__type-list')
+    this.#divTypeList = this.element.querySelector('.event__type-list');
+    this.#inputDestination = this.element.querySelector('.event__input--destination');
+    this.#inputPrice = this.element.querySelector('.event__input--price');
+
+    this.#divTypeList
       .addEventListener('change', this.#typePointChangeHandler);
-    this.element.querySelector('.event__input--destination')
+    this.#inputDestination
       .addEventListener('input', this.#typeDestinationChangeHandler);
-    this.element.querySelector('.event__input--price')
+    this.#inputDestination
+      .addEventListener('focus', () => {this.#inputDestination.value = '';});
+    this.#inputPrice
       .addEventListener('blur', this.#priceChangeHandler);
     this.element.querySelector('.event__save-btn')
       .addEventListener('click', this.#formPublishPointHandler);
@@ -292,27 +296,27 @@ export default class NewPointView extends AbstractStatefulView {
     this.#setDatepicker();
   };
 
-  #typePointChangeHandler = (evt) => {
+  #typePointChangeHandler = async (evt) => {
     evt.preventDefault();
-    const {type} = this.#formGetRouteHandle(evt.target.value);
-    this.#getOffersList(type);
+    const {type, offers} = await this.#formGetRouteHandle(evt.target.value);
+    this.#nameOffersList = [...offers];
     this.updateElement({type});
   };
 
-  #typeDestinationChangeHandler = (evt) => {
+  #typeDestinationChangeHandler = async (evt) => {
     evt.preventDefault();
-    const destination = this.#formGetDestinationHandle(evt.target.value);
+    const destination = await this.#formGetDestinationHandle(evt.target.value);
     this.updateElement({destination: destination});
   };
 
   #elementDateFromChangeHandler = (selectedDates) => {
     const date = new Date(selectedDates[0]).toISOString();
-    this.updateElement({dateFrom: date});
+    this.updateElement({dataFrom: date});
   };
 
   #elementDateToChangeHandler = (selectedDates) => {
     const date = new Date(selectedDates[0]).toISOString();
-    this.updateElement({dateTo: date});
+    this.updateElement({dataTo: date});
   };
 
   #priceChangeHandler = (evt) => {
@@ -326,16 +330,15 @@ export default class NewPointView extends AbstractStatefulView {
     evt.preventDefault();
     const nameOffer = evt.target.labels[0].children[0].innerText;
 
-    if(this.#nameOffersList.find((offer) => offer.title === nameOffer)) {
+    if(this._state.offers.find((offer) => offer.title === nameOffer)) {
+      this._state.offers = this.#nameOffersList.filter((offer) => offer.title !== nameOffer);
+    }else{
       this.#nameOffersList.forEach((offer) => {
         if(offer.title === nameOffer) {
           this._state.offers.push(offer);
         }
       });
-      return;
     }
-
-    this._state.offers = this.#nameOffersList.filter((offer) => offer.title !== nameOffer);
   };
 
   #formPublishPointHandler = (evt) => {
@@ -343,7 +346,20 @@ export default class NewPointView extends AbstractStatefulView {
     const offersList = [];
     let parameter = {};
 
-    const {destination, type, offers} = this._state;
+    const {type, destination, basePrice, offers} = this._state;
+
+    if(!type) {
+      this.#divTypeList.focus();
+      return;
+    }
+    if(!destination) {
+      this.#inputDestination.focus();
+      return;
+    }
+    if(!basePrice) {
+      this.#inputPrice.focus();
+      return;
+    }
 
     if(offers.length > 0) {
       offers.forEach((offer) => {
@@ -354,11 +370,8 @@ export default class NewPointView extends AbstractStatefulView {
     const point = {
       ...this._state,
       destination: destination.id,
-      _offers: offersList,
-      type: type,
-      id: !this.#edit ? nanoid() : this._state.id
+      offers: offersList
     };
-    delete point.offers;
 
     parameter = !this.#edit ? {actionType: UserAction.ADD_TASK, updateType: UpdateType.MINOR} : {actionType: UserAction.UPDATE_TASK, updateType: UpdateType.PATCH};
 

@@ -5,10 +5,12 @@ import ListRoutesView from '../view/list-routes-view.js';
 import PointPresenter from './point-presenter.js';
 import PointModel from '../model/point-model.js';
 import EmptyListView from '../view/empty-list-view.js';
+import CommonApiService from '../common-api-service.js';
 
 import {render, RenderPosition, remove} from '../framework/render.js';
 import { Filter, Sort, ModeSortingView, UserAction, UpdateType } from '../enum.js';
 import { sortByDate, sortByPrice } from '../utils/sort.js';
+import { AUTHORIZATION, END_POINT } from '../utils/const/api-service.js';
 
 export default class BoardPresenter {
   #controlsTrip = null;
@@ -17,7 +19,8 @@ export default class BoardPresenter {
   #buttonNewEventView = null;
   #sortingView = null;
   #listRoutesView = new ListRoutesView();
-  #pointModel = new PointModel();
+  #commonApiService = new CommonApiService(END_POINT, AUTHORIZATION);
+  #pointModel = new PointModel(this.#commonApiService);
   #pointPresenter = null;
   #emptyListView = null;
 
@@ -34,7 +37,7 @@ export default class BoardPresenter {
     this.#modeSortingView = ModeSortingView.CREATE;
   }
 
-  #setPointsPresenter(pointId, pointRoute) {
+  #setPointsPresenter(pointId = 1, pointRoute) {
     this.#collectionPointsPresenter.set(pointId, pointRoute);
   }
 
@@ -45,7 +48,9 @@ export default class BoardPresenter {
         this.#documentRemoveEventListenerHandler,
         this.#listRoutesView,
         this.#onListRoutesCloseForm,
-        this.#handleViewAction
+        this.#handleViewAction,
+        this.#commonApiService,
+        this.#containerBodyPage
       );
       pointPresenter.init(point);
       this.#setPointsPresenter(point.id, pointPresenter);
@@ -85,8 +90,8 @@ export default class BoardPresenter {
     this.#checkPointsList(points);
   }
 
-  init() {
-    this.#points = this.#pointModel.getEverythingPoint();
+  async init() {
+    this.#points = await this.#pointModel.getEverythingPoint();
     this.#points = this.#sortingView.sortPointByDayOrPrice(this.#points);
     this.#render(this.#points);
   }
@@ -103,7 +108,7 @@ export default class BoardPresenter {
     switch(value) {
       case Filter.EVERYTHING :
         this.#mode = Filter.EVERYTHING;
-        this.#points = this.#pointModel.getEverythingPoint();
+        this.#points = this.#pointModel.points;
         this.#points = this.#sortingView.sortPointByDayOrPrice(this.#points);
         this.#getFilterOrSortPoint();
         break;
@@ -119,10 +124,12 @@ export default class BoardPresenter {
   inputChangeSortHandler = (value) => {
     switch(value) {
       case Sort.DAY :
+        this.#points = this.#pointModel.points;
         this.#points = sortByDate(this.#points);
         this.#getFilterOrSortPoint();
         break;
       case Sort.PRICE :
+        this.#points = this.#pointModel.points;
         this.#points = sortByPrice(this.#points);
         this.#getFilterOrSortPoint();
         break;
@@ -141,19 +148,21 @@ export default class BoardPresenter {
         break;
       case UserAction.DELETE_TASK:
         this.#pointModel.addObserver(this.#handleDeleteEvent);
-        this.#pointModel.updatePoint(update, updateType);
+        this.#pointModel.deletePoint(update, updateType);
         break;
     }
   };
 
   #handleModelEvent = (updateType, point) => {
+    const idPointPresenter = point?.idPointPresenter;
     switch (updateType) {
       case UpdateType.MINOR:
         this.inputChangeFilterHandler(this.#mode);
         this.#pointModel.removeObserver(this.#handleModelEvent);
         break;
       case UpdateType.PATCH:
-        this.#collectionPointsPresenter.get(point.id).replaceOldPointRouteViewToNewPointRouteView(point);
+        delete point.idPointPresenter;
+        this.#collectionPointsPresenter.get(idPointPresenter).replaceOldPointRouteViewToNewPointRouteView(point);
         this.#pointModel.removeObserver(this.#handleModelEvent);
         break;
     }
@@ -164,6 +173,8 @@ export default class BoardPresenter {
 
     pointPresenter.destroy();
     this.#collectionPointsPresenter.delete(point.id);
+
+    this.#pointModel.removeObserver(this.#handleDeleteEvent);
   };
 
   #checkOpenForm() {
@@ -184,6 +195,12 @@ export default class BoardPresenter {
     this.#checkOpenForm();
     this.#buttonNewEventView.element.setAttribute('disabled', '');
     this.#pointPresenter = this.#collectionPointsPresenter.values().next().value;
+    if(!this.#pointPresenter) {
+      this.#renderPoint([{id: null}]);
+      this.#pointPresenter = this.#collectionPointsPresenter.values().next().value;
+      this.#pointPresenter.renderFormCreateNewPoint();
+      return;
+    }
     this.#pointPresenter.renderFormCreateNewPoint();
   };
 

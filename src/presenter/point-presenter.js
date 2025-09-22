@@ -15,24 +15,32 @@ export default class PointPresenter {
   #listRoutesCloseFormHandler = null;
   #handleViewAction = null;
 
-  #destinationModel = new DestinationModel();
-  #routeModel = new RouteModel();
+  #commonApiService = null;
+  #destinationModel = null;
+  #routeModel = null;
   #pointRouteView = null;
   #listRoutesView = null;
   #form = null;
+  #containerBodyPage = null;
 
   constructor(
     buttonOpenEditFormHandler,
     documentRemoveEventListenerHandler,
     listRoutesView,
     listRoutesCloseFormHandler,
-    handleViewAction
+    handleViewAction,
+    commonApiService,
+    containerBodyPage
   ) {
     this.#buttonOpenEditFormHandler = buttonOpenEditFormHandler;
     this.#documentRemoveEventListenerHandler = documentRemoveEventListenerHandler;
     this.#listRoutesView = listRoutesView;
     this.#listRoutesCloseFormHandler = listRoutesCloseFormHandler;
     this.#handleViewAction = handleViewAction;
+    this.#commonApiService = commonApiService;
+    this.#destinationModel = new DestinationModel(this.#commonApiService);
+    this.#routeModel = new RouteModel(this.#commonApiService);
+    this.#containerBodyPage = containerBodyPage;
   }
 
   get point() {
@@ -41,6 +49,11 @@ export default class PointPresenter {
 
   #renderPoint(point) {
     this.#point = point;
+
+    if(!point.id) {
+      this.#point = point.id;
+      return;
+    }
 
     this.#pointRouteView = new PointRouteView(
       this.#point,
@@ -54,13 +67,13 @@ export default class PointPresenter {
   }
 
   #formPublishPointHandler = (dataNewPoint, parameter) => {
-    this.#listRoutesCloseFormHandler();
     this.#handleViewAction(dataNewPoint, parameter);
+    this.#listRoutesCloseFormHandler();
   };
 
   #buttonDeletePointHandler = (point, parameter) => {
-    this.#listRoutesCloseFormHandler();
     this.#handleViewAction(point, parameter);
+    this.#listRoutesCloseFormHandler();
   };
 
   #formCloseHandler = () => {
@@ -72,12 +85,12 @@ export default class PointPresenter {
     this.#documentRemoveEventListenerHandler();
   };
 
-  #formGetDestinationHandle = (nameDestination) => {
-    const [destination] = this.#destinationModel.getDestinationName(nameDestination);
+  #formGetDestinationHandle = async (nameDestination) => {
+    const destination = await this.#destinationModel.getDestinationName(nameDestination);
     return destination;
   };
 
-  #formGetRouteHandle = (nameRoute) => this.#routeModel.getRouteName(nameRoute);
+  #formGetRouteHandle = async (nameRoute) => await this.#routeModel.getRouteName(nameRoute);
 
   renderFormCreateNewPoint() {
     this.switchMode();
@@ -88,8 +101,8 @@ export default class PointPresenter {
         offers: [],
         basePrice: null,
         destination: null,
-        dateFrom: new Date().toISOString(),
-        dateTo: new Date().toISOString(),
+        dataFrom: new Date().toISOString(),
+        dataTo: new Date().toISOString(),
       },
       false,
       null,
@@ -97,25 +110,31 @@ export default class PointPresenter {
       this.#formCloseHandler,
       this.#formGetDestinationHandle,
       this.#formGetRouteHandle,
-      null
+      null,
+      []
     );
+    if(!this.#point) {
+      render(this.#form, this.#containerBodyPage, RenderPosition.AFTERBEGIN);
+      return;
+    }
     render(this.#form, this.#listRoutesView.element, RenderPosition.AFTERBEGIN);
   }
 
-  renderFormEditPoint(dataPoint) {
+  async renderFormEditPoint(dataPoint) {
     this.switchMode();
     this.#mode = ModeSwitch.EDIT;
-    const [destination] = this.#destinationModel.getDestinationId(dataPoint.destination);
+    const {offers} = await this.#formGetRouteHandle(dataPoint.type);
 
     this.#form = new NewPointView(
-      {...dataPoint, destination},
+      dataPoint,
       true,
       this.#buttonCloseEditFormHandler,
       this.#formPublishPointHandler,
       null,
       this.#formGetDestinationHandle,
       this.#formGetRouteHandle,
-      this.#buttonDeletePointHandler
+      this.#buttonDeletePointHandler,
+      offers
     );
     replace(this.#form, this.#pointRouteView);
   }
