@@ -2,55 +2,27 @@ import dayjs from 'dayjs';
 
 import Observable from '../framework/observable';
 
-import { points } from '../mock/point';
-import { offers } from '../mock/offer';
-
 export default class PointModel extends Observable {
+  #commonApiService = null;
+  #pointsList = [];
 
-  getEverythingPoint() {
-    const pointsList = this.#collectionEverythingDataPoint(points);
-
-    return pointsList;
+  constructor(commonApiService) {
+    super();
+    this.#commonApiService = commonApiService;
   }
 
-  #collectionEverythingDataPoint(pointList) {
-    const pointsList = [];
-    const copyPointsList = pointList.slice();
+  get points() {
+    return this.#pointsList;
+  }
 
-    copyPointsList.forEach((point) => {
-      const idOffers = point._offers;
-      let newPoint = {};
-
-      if(idOffers && idOffers.length > 0) {
-        newPoint.offers = [];
-
-        for(const id of idOffers) {
-          offers.forEach((offer) => {
-            if(id === offer.id) {
-              newPoint.offers.push(offer);
-            }
-          });
-        }
-
-        newPoint = {
-          ...point,
-          ...newPoint
-        };
-        delete newPoint._offers;
-
-        pointsList.push(newPoint);
-      }else{
-        const editPoint = {
-          ...point,
-          offers: point._offers
-        };
-
-        delete editPoint._offers;
-        pointsList.push(editPoint);
-      }
-    });
-
-    return pointsList;
+  async getEverythingPoint() {
+    try{
+      const response = await this.#commonApiService.getPoints();
+      this.#pointsList = [...response];
+      return this.#pointsList;
+    }catch(err){
+      throw new Error('Can\'t get points');
+    }
   }
 
   getFuturePoint() {
@@ -60,7 +32,7 @@ export default class PointModel extends Observable {
   }
 
   #collectionFutureDataPoint() {
-    const pointsList = this.#collectionEverythingDataPoint();
+    const pointsList = this.#pointsList;
     let futurePointsList = [];
 
     const day = Number(dayjs().format('DD'));
@@ -88,24 +60,44 @@ export default class PointModel extends Observable {
     return futurePointsList;
   }
 
-  addPoint(update, updateType) {
-    points.push(update);
-
-    this._notify(updateType);
+  async addPoint(update, updateType) {
+    try{
+      const response = await this.#commonApiService.addPoint(update);
+      this.#pointsList.push(response);
+      this._notify(updateType);
+    }catch(err){
+      throw new Error('Can\'t add point');
+    }
   }
 
-  updatePoint(update, updateType) {
-    points.filter((point) => point.id !== update.id);
-    points.push(update);
-
-    const [updatePoint] = this.#collectionEverythingDataPoint([update]);
-
-    this._notify(updateType, updatePoint);
+  async updatePoint(update, updateType) {
+    try{
+      const response = await this.#commonApiService.updatePoint(update);
+      const points = this.#pointsList.filter((point) => point.id !== update.id);
+      this.#pointsList = [
+        ...points,
+        response
+      ];
+      this._notify(
+        updateType, {
+          ...response,
+          idPointPresenter: update.id
+        });
+    }catch(err){
+      throw new Error('Can\'t update point');
+    }
   }
 
-  deletePoint(deletePoint, updateType) {
-    points.filter((point) => point.id !== deletePoint.id);
-
-    this._notify(updateType, deletePoint);
+  async deletePoint(pointOfRemov, updateType) {
+    try{
+      const response = await this.#commonApiService.deletePoint(pointOfRemov.id);
+      const points = this.#pointsList.filter((point) => point.id !== response.id);
+      this.#pointsList = [
+        ...points
+      ];
+      this._notify(updateType, pointOfRemov);
+    }catch(err){
+      throw new Error('Can\'t delete point');
+    }
   }
 }

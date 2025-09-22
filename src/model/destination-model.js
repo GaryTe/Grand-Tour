@@ -1,11 +1,16 @@
-import { destinations } from '../mock/destination';
-
 export default class DestinationModel {
-  getDestinationName(nameDestination) {
-    return destinations.filter((item) => item.name === nameDestination);
+  #commonApiService = null;
+
+  constructor(commonApiService) {
+    this.#commonApiService = commonApiService;
   }
 
-  getDestinationId(idDestination) {
-    return destinations.filter((item) => item.id === idDestination);
+  async getDestinationName(nameDestination) {
+    try{
+      const response = await this.#commonApiService.getDestination(nameDestination);
+      return response;
+    }catch{
+      throw new Error('Can\'t get destination');
+    }
   }
 }

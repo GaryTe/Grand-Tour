@@ -1,24 +1,16 @@
-import { routes } from '../mock/route';
-import { offers } from '../mock/offer';
-
 export default class RouteModel {
-  getRouteName(nameRoute) {
-    const offersList = [];
+  #commonApiService = null;
 
-    const [route] = routes.filter((item) => item.type === nameRoute);
+  constructor(commonApiService) {
+    this.#commonApiService = commonApiService;
+  }
 
-    if(route.offers.length === 0) {
-      return route;
+  async getRouteName(nameRoute) {
+    try{
+      const response = await this.#commonApiService.getOffers(nameRoute);
+      return response;
+    }catch{
+      throw new Error('Can\'t get offers');
     }
-
-    route.offers.forEach((idOffer) => {
-      const [offer] = offers.filter((item) => item.id === idOffer);
-      offersList.push(offer);
-    });
-
-    return {
-      ...route,
-      offers: offersList
-    };
   }
 }

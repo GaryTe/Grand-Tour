@@ -1,17 +1,7 @@
 import AbstractView from '../framework/view/abstract-view.js';
 
-import { destinations } from '../mock/destination.js';
-
 import { getOffers } from '../utils/point.js';
 import { getDate, getTime } from '../utils/data-time.js';
-
-function getNameDestination(destination) {
-  const nameDestination = destinations.find((item) => item.id === destination);
-
-  if(!nameDestination) {return '';}
-
-  return nameDestination.name;
-}
 
 function createPointRouteTemplate(point) {
   const {basePrice, dataFrom, dataTo, type, offers, destination} = point;
@@ -28,7 +18,7 @@ function createPointRouteTemplate(point) {
         <div class="event__type">
           <img class="event__type-icon" width="42" height="42" src=${icons} alt="Event type icon">
         </div>
-        <h3 class="event__title">${type} ${getNameDestination(destination)}</h3>
+        <h3 class="event__title">${type} ${destination.name}</h3>
         <div class="event__schedule">
           <p class="event__time">
             <time class="event__start-time" datetime=${dataFrom}>${timeFrom}</time>
