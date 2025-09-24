@@ -1,4 +1,3 @@
-//import { nanoid } from 'nanoid';
 import flatpickr from 'flatpickr';
 
 import 'flatpickr/dist/flatpickr.min.css';
@@ -33,7 +32,9 @@ function createNewPointTemplate(edit, state, nameOffersList) {
     type,
     offers,
     basePrice,
-    destination
+    destination,
+    isSaving = false,
+    isDeleting = false,
   } = state;
 
   return `
@@ -164,8 +165,12 @@ function createNewPointTemplate(edit, state, nameOffersList) {
                     value=${!basePrice ? '' : basePrice}>
                   </div>
 
-                  <button class="event__save-btn  btn  btn--blue" type="submit">Save</button>
-                  ${!edit ? '<button class="event__reset-btn" type="reset">Cancel</button>' : '<button class="event__reset-btn" type="reset">Delete</button>'}
+                  <button
+                  class="event__save-btn  btn  btn--blue"
+                  type="submit">
+                  ${!isSaving ? 'Save' : 'Saving...'}
+                  </button>
+                  ${!edit ? '<button class="event__reset-btn" type="reset">Cancel</button>' : `<button class="event__reset-btn" type="reset">${!isDeleting ? 'Delete' : 'Deleting...'}</button>`}
                   ${!edit ? '' : '<button class="event__rollup-btn" type="button"> <span class="visually-hidden">Open event</span> </button>'}
                 </header>
                 <section class="event__details">

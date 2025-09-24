@@ -3,10 +3,14 @@ import AbstractView from '../framework/view/abstract-view';
 import { Filter } from '../enum';
 
 function createEmptyListTemplate(value) {
-  if(value === Filter.EVERYTHING) {
-    return '<p class="trip-events__msg">Click New Event to create your first point</p>';
+  switch(value) {
+    case Filter.EVERYTHING :
+      return '<p class="trip-events__msg">Click New Event to create your first point</p>';
+    case Filter.FUTURE :
+      return '<p class="trip-events__msg">There are no future events now</p>';
+    case Filter.ERROR :
+      return '<p class="trip-events__msg">Error, when requesting</p>';
   }
-  return '<p class="trip-events__msg">There are no future events now</p>';
 }
 
 export default class EmptyListView extends AbstractView {
