@@ -68,12 +68,10 @@ export default class PointPresenter {
 
   #formPublishPointHandler = (dataNewPoint, parameter) => {
     this.#handleViewAction(dataNewPoint, parameter);
-    this.#listRoutesCloseFormHandler();
   };
 
   #buttonDeletePointHandler = (point, parameter) => {
     this.#handleViewAction(point, parameter);
-    this.#listRoutesCloseFormHandler();
   };
 
   #formCloseHandler = () => {
@@ -137,6 +135,29 @@ export default class PointPresenter {
       offers
     );
     replace(this.#form, this.#pointRouteView);
+  }
+
+  setSaving() {
+    this.#form.updateElement({
+      isSaving: true,
+    });
+  }
+
+  setDeleting() {
+    this.#form.updateElement({
+      isDeleting: true,
+    });
+  }
+
+  setAborting() {
+    const resetFormState = () => {
+      this.#form.updateElement({
+        isSaving: false,
+        isDeleting: false,
+      });
+    };
+
+    this.#form.shake(resetFormState);
   }
 
   #removeFormEditPoint() {

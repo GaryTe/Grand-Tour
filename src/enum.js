@@ -6,7 +6,8 @@ export const PointType = {
 
 export const Filter = {
   EVERYTHING: 'everything',
-  FUTURE: 'future'
+  FUTURE: 'future',
+  ERROR: 'error'
 };
 
 export const ModeSwitch = {
@@ -40,4 +41,9 @@ export const UpdateType = {
   PATCH: 'PATCH',
   MINOR: 'MINOR',
   MAJOR: 'MAJOR',
+};
+
+export const TimeLimit = {
+  LOWER_LIMIT: 10,
+  UPPER_LIMIT: 80,
 };
