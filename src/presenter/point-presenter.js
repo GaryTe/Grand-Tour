@@ -4,7 +4,8 @@ import DestinationModel from '../model/destination-model';
 import RouteModel from '../model/route-model';
 
 import { render, RenderPosition, remove, replace } from '../framework/render';
-import { ModeSwitch } from '../enum';
+import { Filter, ModeSwitch } from '../enum';
+import { checkFuturePoint } from '../utils/point';
 
 export default class PointPresenter {
   #point = null;
@@ -171,13 +172,24 @@ export default class PointPresenter {
     this.#mode = ModeSwitch.DEFAULT;
   }
 
-  replaceOldPointRouteViewToNewPointRouteView(point) {
+  replaceOldPointRouteViewToNewPointRouteView(point, modeFilter) {
     const newPointRouteView = new PointRouteView(
       point,
       this.#buttonOpenEditFormHandler
     );
 
-    replace(newPointRouteView, this.#pointRouteView);
+    switch (modeFilter) {
+      case Filter.FUTURE:
+        if(checkFuturePoint(point)) {
+          replace(newPointRouteView, this.#pointRouteView);
+        }else{
+          remove(this.#pointRouteView);
+        }
+        break;
+      case Filter.EVERYTHING:
+        replace(newPointRouteView, this.#pointRouteView);
+        break;
+    }
 
     this.#point = point;
     this.#pointRouteView = newPointRouteView;
