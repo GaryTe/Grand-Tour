@@ -204,7 +204,7 @@ export default class BoardPresenter {
         break;
       case UpdateType.PATCH:
         delete point.idPointPresenter;
-        this.#collectionPointsPresenter.get(idPointPresenter).replaceOldPointRouteViewToNewPointRouteView(point);
+        this.#collectionPointsPresenter.get(idPointPresenter).replaceOldPointRouteViewToNewPointRouteView(point, this.#mode);
         this.#pointModel.removeObserver(this.#handleModelEvent);
         break;
     }
